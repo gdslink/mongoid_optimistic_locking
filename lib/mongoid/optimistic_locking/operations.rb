@@ -9,13 +9,14 @@ module Mongoid
         end
       end
 
-      def update(options = {})
+      def update_document(options = {})
         return super unless optimistic_locking? && valid?
         set_lock_version_for_selector do
           increment_lock_version do
             result = super
-            getlasterror = mongo_session.command({:getlasterror => 1})
-            if result && !getlasterror['updatedExisting']
+            getlasterror = mongo_client.command({:getlasterror => 1, :w => 1})
+            affected = getlasterror.documents[0][:updatedExisting].nil? ? true : getlasterror.documents[0][:updatedExisting]
+            if result && !affected
               raise Mongoid::Errors::StaleDocument.new('update', self)
             end
             result
@@ -39,8 +40,8 @@ module Mongoid
         result = super
         if optimistic_locking? && lock_version_for_selector
           key =
-            if metadata && metadata.embedded?
-              path = metadata.path(self)
+            if __metadata && __metadata.embedded?
+              path = __metadata.path(self)
               "#{path.path}._lock_version"
             else
               '_lock_version'
