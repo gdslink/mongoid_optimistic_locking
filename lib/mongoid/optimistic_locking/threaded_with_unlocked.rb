@@ -11,11 +11,11 @@ module Mongoid
         end
 
         def unlocked
-          !!Thread.current["[mongoid]:unlocked"]
+          !!RequestStore.store["[mongoid]:unlocked"]
         end
 
         def unlocked=(value)
-          Thread.current["[mongoid]:unlocked"] = value
+          RequestStore.store["[mongoid]:unlocked"] = value
         end
 
         def clear_options!
